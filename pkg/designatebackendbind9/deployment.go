@@ -93,8 +93,6 @@ func Deployment(
 	envVars["KOLLA_CONFIG_STRATEGY"] = env.SetValue("COPY_ALWAYS")
 	envVars["CONFIG_HASH"] = env.SetValue(configHash)
 
-	volumeMounts := designate.GetAllVolumeMounts()
-
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name,
@@ -113,8 +111,8 @@ func Deployment(
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: instance.Spec.ServiceAccount,
-					Volumes: designate.GetOpenstackVolumes(
-						designate.GetServiceConfigConfigMapName(instance.Name),
+					Volumes: designate.GetVolumes(
+						designate.GetOwningDesignateName(instance),
 					),
 					Containers: []corev1.Container{
 						{
@@ -131,7 +129,7 @@ func Deployment(
 								RunAsUser: &rootUser,
 							},
 							Env:          env.MergeEnvs([]corev1.EnvVar{}, envVars),
-							VolumeMounts: volumeMounts,
+							VolumeMounts: designate.GetServiceVolumeMounts("designate-backendbind9"),
 							Resources:    instance.Spec.Resources,
 							// StartupProbe:  startupProbe,
 							// LivenessProbe: livenessProbe,
@@ -178,9 +176,10 @@ func Deployment(
 		TransportURLSecret:   instance.Spec.TransportURLSecret,
 		DBPasswordSelector:   instance.Spec.PasswordSelectors.Database,
 		UserPasswordSelector: instance.Spec.PasswordSelectors.Service,
-		BackendType:          instance.Spec.BackendType,
-		VolumeMounts:         designate.GetAllVolumeMounts(),
-		Debug:                instance.Spec.Debug.InitContainer,
+		// BackendType:          "bind9",
+		BackendType:  instance.Spec.BackendType,
+		VolumeMounts: designate.GetInitVolumeMounts(),
+		Debug:        instance.Spec.Debug.InitContainer,
 	}
 	deployment.Spec.Template.Spec.InitContainers = designate.InitContainer(initContainerDetails)
 

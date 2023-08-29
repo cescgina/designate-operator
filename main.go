@@ -204,7 +204,7 @@ func main() {
 
 		checker = mgr.GetWebhookServer().StartedChecker()
 	}
-	
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", checker); err != nil {
